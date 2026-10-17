@@ -1,0 +1,197 @@
+{
+ "computed_at": "2026-10-17T00:54:49+00:00",
+ "rain": {
+  "climatology": {
+   "p": 0.3314285714285714,
+   "days": 525,
+   "wet_days": 174,
+   "source": "NOAA NCEI daily summaries, O'Hare (USW00094846)",
+   "url": "https://www.ncei.noaa.gov/access/services/data/v1?dataset=daily-summaries&stations=USW00094846&dataTypes=PRCP&startDate=1991-01-01&endDate=2025-12-31&format=json&units=standard",
+   "note": "Share of days Oct 27 to Nov 10, 1991-2025, with 0.01 in or more."
+  },
+  "nws": {
+   "status": "out_of_range",
+   "url": "https://api.weather.gov/gridpoints/LOT/66,77/forecast",
+   "note": "NWS forecasts 7 days ahead; Nov 3 is not in range yet."
+  },
+  "p": 0.3314285714285714,
+  "used": "climatology"
+ },
+ "tie": {
+  "p": {
+   "Yes": 0.10526315789473684,
+   "No": 0.8947368421052632
+  },
+  "weights": {
+   "Yes": 1.0,
+   "No": 8.5
+  },
+  "events": [
+   {
+    "event": "2026 Democratic primary night victory speech, Austin (Mar 3, 2026)",
+    "kind": "election_night",
+    "label": "No",
+    "videos": [
+     "KCLp4dFM_n4",
+     "VfuU7Qy5bW0",
+     "N-Antmkb2W0",
+     "1n-pbdJf4B0",
+     "CIx6jdRsh2o"
+    ],
+    "note": "Dark suit, white shirt, open collar in every frame."
+   },
+   {
+    "event": "Rally, 3,000 people (2025)",
+    "kind": "rally",
+    "label": "No",
+    "videos": [
+     "6mAPHKHFtKQ"
+    ]
+   },
+   {
+    "event": "'New American Dream' policy address (Aug 2026)",
+    "kind": "major_speech",
+    "label": "No",
+    "videos": [
+     "GK24thp_2Qo",
+     "QicD5B1sVo0"
+    ]
+   },
+   {
+    "event": "Baylor University rally, Waco (Sept 2026)",
+    "kind": "rally",
+    "label": "No",
+    "videos": [
+     "ONKo_D-dm8k",
+     "ggz8Hev-afI"
+    ]
+   },
+   {
+    "event": "Rally 19 days before the election (Oct 2026)",
+    "kind": "rally",
+    "label": "No",
+    "videos": [
+     "dxvkQOBZkNs",
+     "91GRcwryiYE"
+    ],
+    "note": "Shirtsleeves."
+   },
+   {
+    "event": "Jimmy Kimmel Live interview (Sept 2026)",
+    "kind": "tv",
+    "label": "No",
+    "videos": [
+     "WLDE9LrGpNk"
+    ]
+   },
+   {
+    "event": "CNN / Jubilee town hall (Oct 2026)",
+    "kind": "tv",
+    "label": "No",
+    "videos": [
+     "tweubjhuaPo"
+    ]
+   },
+   {
+    "event": "Jubilee 'Surrounded' (Dec 2025)",
+    "kind": "tv",
+    "label": "No",
+    "videos": [
+     "1yQqRGDqjYM"
+    ]
+   },
+   {
+    "event": "NBC News clip on Paxton debate challenge (Oct 2026)",
+    "kind": "tv",
+    "label": "No",
+    "videos": [
+     "KhBgmiCE0kg"
+    ]
+   }
+  ]
+ },
+ "outfit": {
+  "p": {
+   "Blue": 0.10909090909090909,
+   "Red": 0.7272727272727273,
+   "Black/gray": 0.09090909090909091,
+   "Other": 0.07272727272727272
+  },
+  "weights": {
+   "Blue": 1.5,
+   "Red": 10.0,
+   "Black/gray": 1.25,
+   "Other": 1.0
+  },
+  "events": [
+   {
+    "event": "2008 election night",
+    "kind": "election_night",
+    "label": "Red",
+    "videos": [
+     "9Fm45T56HCk"
+    ]
+   },
+   {
+    "event": "2020 election night speeches, Bangor (Nov 3, 2020)",
+    "kind": "election_night",
+    "label": "Red",
+    "videos": [
+     "FdXSvjqXBGQ",
+     "qgkDXQx_LP4",
+     "f50E6Gm0QMY",
+     "LW7A3_HjXNc"
+    ],
+    "note": "Red coat."
+   },
+   {
+    "event": "2020 victory speech after Gideon conceded (Nov 4, 2020, daytime)",
+    "kind": "victory_day_after",
+    "label": "Red",
+    "videos": [
+     "3RUpsg6_nO0",
+     "wOtAn2DEKKQ",
+     "j8egV_GtmfU",
+     "LwQvpcNDcmY"
+    ],
+    "note": "Red puffer jacket."
+   },
+   {
+    "event": "2026 reelection campaign announcement",
+    "kind": "campaign_milestone",
+    "label": "Red",
+    "videos": [
+     "EAxh8gCljXc"
+    ]
+   },
+   {
+    "event": "2026 third Senate debate (WMTW)",
+    "kind": "debate",
+    "label": "Blue",
+    "videos": [
+     "ShrwQRcYM7E",
+     "U2IW79qk0u0"
+    ]
+   },
+   {
+    "event": "2026 final Senate debate (NEWS CENTER Maine)",
+    "kind": "debate",
+    "label": "Black/gray",
+    "videos": [
+     "lN0F9YsTn54"
+    ],
+    "note": "Small, dark frame; color uncertain.",
+    "uncertain": true
+   }
+  ]
+ },
+ "event_weights": {
+  "election_night": 3.0,
+  "victory_day_after": 1.5,
+  "campaign_milestone": 1.5,
+  "major_speech": 1.0,
+  "rally": 0.5,
+  "debate": 0.5,
+  "tv": 0.5
+ }
+}

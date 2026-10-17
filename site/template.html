@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Midterm Madness Optimizer</title>
+<style>
+/* One narrow column like the paper sheet: navy band headers with a red rule. System fonts only, so the file works offline. */
+:root{
+  --bg:#f2f3f7; --surface:#fff; --ink:#1a2342; --muted:#5a6381; --line:#d8dbe6;
+  --band:#222e55; --band-ink:#fff; --rule:#b8243a;
+  --dem:#1d5cbb; --rep:#bf2638; --hi:#fff1bd; --hi-ink:#5a4300; --field:#fff; --warn:#8a4b00;
+  --display:"Arial Narrow","Helvetica Neue Condensed",Arial,sans-serif;
+  --body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f131e; --surface:#171d2d; --ink:#e7eaf4; --muted:#99a2be; --line:#2b3349;
+  --band:#263463; --rule:#e2586c; --dem:#73a8f6; --rep:#f17685; --hi:#4b4013; --hi-ink:#ffe9a3; --field:#10151f; --warn:#f0b35a; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0f131e; --surface:#171d2d; --ink:#e7eaf4; --muted:#99a2be; --line:#2b3349;
+  --band:#263463; --rule:#e2586c; --dem:#73a8f6; --rep:#f17685; --hi:#4b4013; --hi-ink:#ffe9a3; --field:#10151f; --warn:#f0b35a; color-scheme:dark }
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;font-variant-numeric:tabular-nums}
+.wrap{max-width:820px;margin:0 auto;padding:16px 16px 48px;display:flex;flex-direction:column;gap:16px}
+h1,h2,h3{font-family:var(--display);margin:0;letter-spacing:.01em}
+.band{background:var(--band);color:var(--band-ink);border-bottom:3px solid var(--rule);padding:10px 12px;display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;justify-content:space-between}
+.band h1{font-size:24px;text-transform:uppercase}
+.band h2{font-size:17px;text-transform:uppercase}
+.band small{font-size:12px;opacity:.85}
+.card{background:var(--surface);border:1px solid var(--line)}
+.pad{padding:12px}
+p{margin:0}
+.muted{color:var(--muted)} .small{font-size:13px} .warn{color:var(--warn)}
+a{color:var(--dem)}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--dem);outline-offset:2px}
+.tabs{display:flex;border:1px solid var(--line);background:var(--surface);position:sticky;top:0;z-index:2}
+.tabs button{flex:1;background:none;border:0;padding:10px 4px;font-weight:700;font-size:14px;border-bottom:3px solid transparent}
+.tabs button[aria-selected="true"]{border-bottom-color:var(--rule);color:var(--rule)}
+.pane{display:flex;flex-direction:column;gap:16px}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+.tile{background:var(--surface);padding:10px 12px;min-width:0}
+.tile b{display:block;font-family:var(--display);font-size:26px;line-height:1.1}
+.tile span{font-size:12px;color:var(--muted)}
+@media (max-width:520px){.tiles{grid-template-columns:1fr 1fr}.tile:first-child{grid-column:1/-1}}
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.seg button{background:var(--surface);border:1px solid var(--line);padding:7px 12px;font-weight:600;font-size:14px}
+.seg button[aria-pressed="true"]{background:var(--band);color:var(--band-ink);border-color:var(--band)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left;font-weight:700;padding:8px 8px 6px;white-space:nowrap}
+td{padding:6px 8px;border-top:1px solid var(--line);vertical-align:top}
+td.n,th.n{text-align:right}
+.race b{font-weight:700} .race span{color:var(--muted);font-size:12px}
+.src{font-size:11px;color:var(--muted)}
+.src a{color:var(--muted)}
+.chip{display:inline-block;padding:2px 7px;font-weight:700;font-size:13px;white-space:nowrap;border:1.5px solid currentColor}
+.chip.D,.chip.I{color:var(--dem)} .chip.R{color:var(--rep)}
+.chip.up{border-style:dashed}
+.write{font-weight:700;white-space:nowrap}
+.grp{font-family:var(--display);font-size:14px;text-transform:uppercase;letter-spacing:.05em;color:var(--dem);padding:12px 8px 2px}
+.board{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;background:var(--line)}
+.board div{background:var(--surface);padding:10px 12px}
+.board b{display:block;font-family:var(--display);font-size:24px}
+.board span{font-size:12px;color:var(--muted)}
+details>summary{cursor:pointer;font-weight:700;padding:12px}
+.set{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px 16px;padding:0 12px 12px}
+.set label{display:flex;flex-direction:column;gap:3px;font-size:13px;color:var(--muted)}
+.set input[type=number]{padding:6px;border:1px solid var(--line);background:var(--field);color:var(--ink);font:inherit;width:100%}
+.set .chk{flex-direction:row;align-items:center;gap:8px}
+.link{background:none;border:0;padding:0;color:var(--dem);text-decoration:underline;font-size:13px}
+ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.mine select,.mine input{padding:4px;border:1px solid var(--line);background:var(--field);color:var(--ink);font:inherit;max-width:110px}
+tr.diff td{background:var(--hi);color:var(--hi-ink)}
+.best{font-weight:700}
+.frames{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
+.frames img{width:96px;height:54px;object-fit:cover;background:var(--line);display:block}
+.bars{display:flex;align-items:flex-end;gap:1px;height:60px;margin-top:6px}
+.bars i{flex:1;background:var(--dem);min-height:1px}
+.bars i.on{background:var(--rule)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="band"><h1>Midterm Madness Optimizer</h1><small id="stamp"></small></div>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" id="tab-opt" aria-selected="true">Sheet</button>
+    <button role="tab" id="tab-work" aria-selected="false">Show work</button>
+    <button role="tab" id="tab-mine" aria-selected="false">My sheet</button>
+    <button role="tab" id="tab-src" aria-selected="false">Sources</button>
+  </div>
+
+  <!-- ============ SHEET ============ -->
+  <div id="pane-opt" class="pane">
+    <div class="pad seg card">
+      <button type="button" id="s-ev">Highest expected score</button>
+      <button type="button" id="s-first">Best chance of first</button>
+    </div>
+    <div class="tiles" id="tiles"></div>
+
+    <section class="card">
+      <div class="band"><h2>Section 1 · Senate</h2><small>dashed = 8-point underdog</small></div>
+      <div class="scroll"><table id="sen"></table></div>
+    </section>
+
+    <section class="card">
+      <div class="band"><h2>Section 2 · House</h2></div>
+      <div class="scroll"><table id="hou"></table></div>
+    </section>
+
+    <section class="card">
+      <div class="band"><h2>Section 3 · Big Board</h2></div>
+      <div class="board" id="board"></div>
+    </section>
+
+    <section class="card">
+      <div class="band"><h2>Section 4 · Wildcards</h2></div>
+      <div class="scroll"><table id="wild"></table></div>
+    </section>
+
+    <section class="card">
+      <details>
+        <summary>Assumptions</summary>
+        <div class="set">
+          <label>People in the pool, you included<input type="number" id="c-pool" min="2" max="100" step="1"></label>
+          <label>Simulated elections<input type="number" id="c-sims" min="1000" max="20000" step="1000"></label>
+          <label>Other entries: partisan lean (+ = Dem)<input type="number" id="c-lean" min="-1" max="1" step="0.05"></label>
+          <label>Other entries: underdog rate in Lean/Likely races<input type="number" id="c-dog" min="0" max="0.5" step="0.01"></label>
+          <label>Other entries: random contrarian picks each<input type="number" id="c-contra" min="0" max="5" step="1"></label>
+          <label>Other entries: toss-up picks follow the odds (0 coin flip, 1 fully)<input type="number" id="c-news" min="0" max="1" step="0.05"></label>
+          <label class="chk"><input type="checkbox" id="c-osborn"> Osborn counts as a Dem Senate seat</label>
+        </div>
+        <div class="pad"><button class="link" type="button" id="reset">Reset</button></div>
+        <ul class="muted small" id="assume-list" style="padding:0 12px 12px 30px" hidden></ul>
+      </details>
+    </section>
+  </div>
+
+  <!-- ============ SHOW WORK ============ -->
+  <div id="pane-work" class="pane" hidden>
+    <section class="card pad small">
+      <p><b>Method</b></p>
+      <ul class="muted" id="w-method"></ul>
+    </section>
+
+    <section class="card">
+      <div class="band"><h2>Race picks</h2><small>expected points of each side</small></div>
+      <div class="scroll"><table id="w-picks"></table></div>
+    </section>
+
+    <section class="card">
+      <div class="band"><h2>Senate margins</h2></div>
+      <div class="scroll"><table id="w-marg"></table></div>
+    </section>
+
+    <section class="card">
+      <div class="band"><h2>Big Board</h2></div>
+      <div class="pad small" id="w-board"></div>
+    </section>
+
+    <section class="card">
+      <div class="band"><h2>Wildcards</h2></div>
+      <div class="pad small" id="w-wild"></div>
+    </section>
+
+    <section class="card">
+      <div class="band"><h2>Prop evidence</h2><small>frames from each video</small></div>
+      <div class="pad small" id="w-evidence"></div>
+    </section>
+
+    <section class="card">
+      <div class="band"><h2>Chance of first</h2></div>
+      <div class="pad small" id="w-first"></div>
+    </section>
+  </div>
+
+  <!-- ============ MY SHEET ============ -->
+  <div id="pane-mine" class="pane" hidden>
+    <section class="card">
+      <div class="band"><h2>My sheet</h2><small>highlighted = differs from highest EV</small></div>
+      <div class="tiles" id="mine-tiles"></div>
+      <div class="scroll"><table id="mine" class="mine"></table></div>
+      <div class="pad"><button class="link" type="button" id="mine-reset">Reset to submitted sheet</button></div>
+    </section>
+  </div>
+
+  <!-- ============ SOURCES ============ -->
+  <div id="pane-src" class="pane" hidden>
+    <section class="card">
+      <div class="band"><h2>Every market</h2><small id="grid-sum"></small></div>
+      <div class="pad seg"><button type="button" id="g-sheet">Sheet items</button><button type="button" id="g-gaps">Gaps</button><button type="button" id="g-all">All</button></div>
+      <div class="scroll"><table id="grid"></table></div>
+    </section>
+    <section class="card pad small">
+      <p><b>Not automated (sites block scripts)</b></p>
+      <ul class="muted">
+        <li><a href="https://www.cookpolitical.com/ratings/house-race-ratings" target="_blank" rel="noopener">Cook House</a> · <a href="https://www.cookpolitical.com/ratings/senate-race-ratings" target="_blank" rel="noopener">Cook Senate</a>: needed only for the Upset Special.</li>
+        <li><a href="https://www.realclearpolling.com/latest-polls/senate" target="_blank" rel="noopener">RealClearPolling</a>. Polls shown here come from VoteHub, for reference only.</li>
+      </ul>
+      <p style="margin-top:10px"><b>Pricing and refresh</b></p>
+      <ul class="muted">
+        <li>Bid/ask midpoint when the spread is 10¢ or less, otherwise last trade. PredictIt: tight spread only.</li>
+        <li>Failed requests retry with growing random waits; a source that still fails shows its last good reading, marked stale (*).</li>
+      </ul>
+    </section>
+  </div>
+</div>
+
+<script>
+const DATA=/*__DATA__*/null;
+//MODEL-START
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pc=(p,d)=>p==null?'–':(p*100).toFixed(d??(p>.995||p<.005?1:0))+'%';
+const RAT={SD:'Solid D',LkD:'Likely D',LnD:'Lean D',T:'Toss-up',LnR:'Lean R',LkR:'Likely R',SR:'Solid R'};
+const CENTER={LkD:1,LnD:1,T:0,LnR:-1,LkR:-1};
+const PTS=DATA.points;
+const OUTFIT=['Blue','Red','Black/gray','Other'];
+const TILTS=[-2,-1,0,1,2];
+const DEFAULTS={pool:19,sims:4000,lean:0.15,dog:0.04,contra:1,news:0.6,osborn:true};
+const OPP=150;
+const SRCL={kalshi:'K',polymarket:'P',predictit:'PI',kalshi_won:'K won'};
+
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function gaussOf(rng){let spare=null;return function(){if(spare!==null){const v=spare;spare=null;return v}
+  let u=0;while(u===0)u=rng();const v=rng(),m=Math.sqrt(-2*Math.log(u));spare=m*Math.sin(2*Math.PI*v);return m*Math.cos(2*Math.PI*v)}}
+function ncdf(x){const t=1/(1+.2316419*Math.abs(x)),d=.3989423*Math.exp(-x*x/2);const p=d*t*(.3193815+t*(-.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));return x>0?1-p:p}
+function probit(p){p=Math.min(.9999,Math.max(.0001,p));
+  const a=[-39.69683028665376,220.9460984245205,-275.9285104469687,138.3577518672690,-30.66479806614716,2.506628277459239],
+        b=[-54.47609879822406,161.5858368580409,-155.6989798598866,66.80131188771972,-13.28068155288572],
+        c=[-0.007784894002430293,-0.3223964580411365,-2.400758277161838,-2.549732539343734,4.374664141464968,2.938163982698783],
+        d=[0.007784695709041462,0.3224671290700398,2.445134137142996,3.754408661907416];
+  let q,r;
+  if(p<0.02425){q=Math.sqrt(-2*Math.log(p));return(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1)}
+  if(p>1-0.02425){q=Math.sqrt(-2*Math.log(1-p));return-(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1)}
+  q=p-0.5;r=q*q;return(((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1)}
+
+const ALL=DATA.races.filter(r=>r.p!=null);
+const SEN=ALL.filter(r=>r.key[0]==='S'), HOU=ALL.filter(r=>r.key[0]==='H');
+const SHEET=ALL.filter(r=>r.sheet).sort((a,b)=>a.sheet.n-b.sheet.n);   // 55, sheet order
+const NS=12;
+const MARG=DATA.margins;
+const pWin=r=>r.key[0]==='S'&&r.sheet&&MARG[r.key]?ncdf(MARG[r.key].mu/MARG[r.key].sd):r.p;
+
+// margin score: max(0, 10 - |error|) + 3 if within 1; results rounded to a tenth
+function marginEV(mu,sd,g){let t=0,w=0;for(let m=Math.round((mu-5*sd)*10);m<=Math.round((mu+5*sd)*10);m++){
+  const x=m/10,pr=ncdf((x+.05-mu)/sd)-ncdf((x-.05-mu)/sd),e=Math.abs(x-g);t+=pr*(Math.max(0,10-e)+(e<=1+1e-9?3:0));w+=pr}return t/w}
+function bestMargin(mu,sd){let best=null,bv=-1;for(let g10=Math.round((mu-4)*10);g10<=Math.round((mu+4)*10);g10++){const v=marginEV(mu,sd,g10/10);if(v>bv){bv=v;best=g10/10}}return{g:best,ev:bv}}
+
+let st={cfg:{...DEFAULTS},strat:'ev',seed:20261103,mine:null};
+try{const raw=JSON.parse(localStorage.getItem('mm26v3')||'null');if(raw){st.cfg={...DEFAULTS,...(raw.cfg||{})};st.strat=raw.strat??'ev';st.mine=raw.mine||null}}catch(e){}
+function save(){try{localStorage.setItem('mm26v3',JSON.stringify({cfg:st.cfg,strat:st.strat,mine:st.mine}))}catch(e){}}
+
+// seat-count markets -> one blended distribution {seats: p}
+function marketPmf(item){const srcs=DATA.seat_markets[item]||{};const out={};let w=0;
+  for(const k in srcs){const x=srcs[k];w+=x.w;for(const s in x.pmf)out[s]=(out[s]||0)+x.w*x.pmf[s]}
+  if(!w)return null;for(const s in out)out[s]/=w;return out}
+function arrPmf(arr){const out={};for(const v of arr)out[v]=(out[v]||0)+1/arr.length;return out}
+function cdfOf(pmf){const ks=Object.keys(pmf).map(Number).sort((a,b)=>a-b);let c=0;return ks.map(k=>{c+=pmf[k];return[k,c]})}
+// rank-preserving remap of simulated seat totals onto a target distribution
+function remap(arr,target){const n=arr.length,order=Array.from(arr.keys()).sort((a,b)=>arr[a]-arr[b]),cdf=cdfOf(target),out=new Int16Array(n);
+  let j=0;order.forEach((idx,rank)=>{const u=(rank+.5)/n;while(j<cdf.length-1&&cdf[j][1]<u)j++;out[idx]=cdf[j][0]});return out}
+function blend(a,b){if(!b)return a;const out={};for(const k in a)out[k]=(out[k]||0)+.5*a[k];for(const k in b)out[k]=(out[k]||0)+.5*b[k];return out}
+
+function simulate(cfg,seed){
+  const S=cfg.sims,rng=mulberry32(seed),g=gaussOf(rng);
+  const nR=ALL.length,idx={};ALL.forEach((r,i)=>idx[r.key]=i);
+  const base=new Float64Array(nR);ALL.forEach((r,i)=>base[i]=probit(r.p));
+  const Z=new Float64Array(S),E=new Float32Array(S*nR);
+  for(let s=0;s<S;s++){Z[s]=g();for(let i=0;i<nR;i++)E[s*nR+i]=g()}
+  const isSen=ALL.map(r=>r.key[0]==='S');const NE=idx['S-NE'];
+  function seatsFor(rho,chamber){const a=Math.sqrt(rho),b=Math.sqrt(1-rho),out=new Int16Array(S);
+    for(let s=0;s<S;s++){let n=chamber==='S'?DATA.senate_not_up_d:0;const o=s*nR;
+      for(let i=0;i<nR;i++){if(isSen[i]!==(chamber==='S'))continue;if(base[i]+a*Z[s]+b*E[o+i]>0){if(i===NE&&!cfg.osborn)continue;n++}}
+      out[s]=n}return out}
+  const frac=(arr,th)=>{let n=0;for(const v of arr)if(v>=th)n++;return n/arr.length};
+  function calib(ch,th,target){let best=null;for(let k=0;k<=18;k++){const rho=k*.05,seats=seatsFor(rho,ch),f=frac(seats,th);
+    if(!best||Math.abs(f-target)<Math.abs(best.f-target))best={rho,f,seats}}return best}
+  const cs=calib('S',51,DATA.control.senate.p??.5),ch=calib('H',218,DATA.control.house.p??.5);
+  const L=new Float32Array(S*nR);
+  for(let s=0;s<S;s++){const o=s*nR;for(let i=0;i<nR;i++){const rho=isSen[i]?cs.rho:ch.rho;L[o+i]=base[i]+Math.sqrt(rho)*Z[s]+Math.sqrt(1-rho)*E[o+i]}}
+  const M=new Float32Array(S*NS);
+  for(let j=0;j<NS;j++){const r=SHEET[j],m=MARG[r.key],i=idx[r.key],rho=cs.rho;
+    for(let s=0;s<S;s++){M[s*NS+j]=m.mu+m.sd*(Math.sqrt(rho)*Z[s]+Math.sqrt(1-rho)*E[s*nR+i])}}
+  const mS=marketPmf('seats_senate'),mH=marketPmf('seats_house');
+  const sen=remap(cs.seats,blend(arrPmf(cs.seats),mS)),hou=remap(ch.seats,blend(arrPmf(ch.seats),mH));
+  const P=DATA.props,ia=MARG['GOV-IA'];
+  const rain=new Uint8Array(S),tie=new Uint8Array(S),outfit=new Uint8Array(S),rr=new Uint8Array(S),iaM=new Float32Array(S);
+  const pOut=OUTFIT.map(k=>P.outfit.p[k]);
+  for(let s=0;s<S;s++){rain[s]=rng()<P.rain.p?1:0;tie[s]=rng()<P.tie.p.Yes?1:0;
+    let u=rng(),k=0;while(k<3&&u>pOut[k]){u-=pOut[k];k++}outfit[s]=k;rr[s]=rng()<(DATA.railroad.p??.5)?1:0;
+    iaM[s]=Math.round((ia.mu+ia.sd*g())*10)/10}
+  return{S,nR,idx,L,M,sen,hou,senRace:cs.seats,houRace:ch.seats,mS,mH,cs,ch,sheetIdx:SHEET.map(r=>idx[r.key]),rain,tie,outfit,rr,iaM,
+    pSen:frac(sen,51),pHou:frac(hou,218)}
+}
+const win=(sim,s,key)=>sim.L[s*sim.nR+sim.idx[key]]>0;
+const sheetWin=(sim,s,j)=>j<NS?sim.M[s*NS+j]>0:sim.L[s*sim.nR+sim.sheetIdx[j]]>0;
+
+// per-simulation score of a sheet, split by item so single answers can be swapped quickly
+function pickScores(sim,j,dPick){const S=sim.S,a=new Uint8Array(S),pt=PTS[SHEET[j].sheet.rating];for(let s=0;s<S;s++){const d=sheetWin(sim,s,j);a[s]=dPick?(d?pt[0]:0):(d?0:pt[1])}return a}
+function marginScores(sim,j,g){const a=new Float32Array(sim.S);for(let s=0;s<sim.S;s++){const e=Math.abs(Math.round(sim.M[s*NS+j]*10)/10-g);a[s]=Math.max(0,10-e)+(e<=1+1e-9?3:0)}return a}
+function ctrlScores(arr,th,c){const a=new Uint8Array(arr.length);for(let s=0;s<arr.length;s++)a[s]=((arr[s]>=th)?1:0)===c?25:0;return a}
+function seatScores(arr,per,g){const a=new Float32Array(arr.length);for(let s=0;s<arr.length;s++)a[s]=Math.max(0,40-per*Math.abs(g-arr[s]));return a}
+function upsetScores(sim,u){const a=new Uint8Array(sim.S);if(!u||sim.idx[u.key]==null)return a;for(let s=0;s<sim.S;s++)a[s]=(win(sim,s,u.key)?'D':'R')===u.party?15:0;return a}
+function propScores(sim,k,v){const a=new Uint8Array(sim.S);for(let s=0;s<sim.S;s++)a[s]=v===sim[k][s]?3:0;return a}
+function itemScores(sim,sh){const parts={};
+  for(let j=0;j<55;j++)parts['p'+j]=pickScores(sim,j,sh.pick[j]);
+  for(let j=0;j<NS;j++)parts['m'+j]=marginScores(sim,j,sh.marg[j]);
+  parts.senC=ctrlScores(sim.sen,51,sh.senC);parts.houC=ctrlScores(sim.hou,218,sh.houC);
+  parts.senG=seatScores(sim.sen,8,sh.senG);parts.houG=seatScores(sim.hou,2,sh.houG);
+  parts.upset=upsetScores(sim,sh.upset);
+  for(const k of ['rain','tie','outfit','rr'])parts[k]=propScores(sim,k,sh[k]);
+  return parts}
+function total(parts,S){const t=new Float32Array(S);for(const k in parts){const a=parts[k];for(let s=0;s<S;s++)t[s]+=a[s]}return t}
+const mean=a=>{let t=0;for(const v of a)t+=v;return t/a.length};
+
+function distBest(arr,per){let lo=1e9,hi=-1e9;for(const v of arr){if(v<lo)lo=v;if(v>hi)hi=v}
+  let best=lo,bv=-1;for(let gq=lo;gq<=hi;gq++){let t=0;for(const v of arr){const x=40-per*Math.abs(gq-v);if(x>0)t+=x}if(t>bv){bv=t;best=gq}}return{g:best,ev:bv/arr.length}}
+function pct(arr,q){const c=Array.from(arr).sort((x,y)=>x-y);return c[Math.min(c.length-1,Math.floor(q*c.length))]}
+// Upset Special: a candidate in a race off the sheet whom Cook rates Likely or Solid against.
+// Off-sheet House races were all Likely/Solid on Sept 25 (the sheet lists every Lean and Toss-up);
+// with current ratings pasted in (data/manual/cook_ratings.json), races since moved to Lean/Toss-up are dropped.
+const COOK=DATA.cook,COOK_FAV={SD:'D',LkD:'D',LnD:null,T:null,LnR:null,LkR:'R',SR:'R'};
+function cookNow(key){if(!COOK)return null;return key[0]==='S'?COOK.senate[key.slice(2)]:COOK.house[key]}
+function upsetList(all){
+  return ALL.filter(r=>!r.sheet).map(r=>{const now=cookNow(r.key),fav=now?COOK_FAV[now]:(r.p>=.5?'D':'R'),
+      party=fav?(fav==='D'?'R':'D'):(r.p<.5?'D':'R'),p=party==='D'?r.p:1-r.p;
+      return{key:r.key,party,p,r,now,eligible:!!fav&&(r.key[0]==='H'||!!now)}})
+    .filter(x=>x.p>.02&&(all||x.eligible)).sort((a,b)=>b.p-a.p)}
+
+// highest-expected-score sheet, optionally tilted t points toward Dems (starting points for the chance-of-first search)
+function sheetFor(sim,t){
+  const pick=new Uint8Array(55),marg=new Float32Array(NS);
+  for(let j=0;j<55;j++){const r=SHEET[j],pt=PTS[r.sheet.rating];
+    const p=j<NS?ncdf((MARG[r.key].mu+t)/MARG[r.key].sd):ncdf(probit(r.p)+t/8);
+    pick[j]=p*pt[0]>=(1-p)*pt[1]?1:0}
+  for(let j=0;j<NS;j++){const m=MARG[SHEET[j].key];marg[j]=bestMargin(m.mu+t,m.sd).g}
+  const shift=(arr,k)=>t===0?arr:arr.map(v=>v+k);
+  const senT=shift(sim.sen,Math.round(t*0.6)),houT=shift(sim.hou,Math.round(t*4));
+  const fr=(a,th)=>{let n=0;for(const v of a)if(v>=th)n++;return n/a.length};
+  const up=upsetList()[0],P=DATA.props;
+  return{pick,marg,senC:fr(senT,51)>=.5?1:0,houC:fr(houT,218)>=.5?1:0,senG:distBest(senT,8).g,houG:distBest(houT,2).g,
+    upset:up?{key:up.key,party:up.party}:null,rain:P.rain.p>=.5?1:0,tie:P.tie.p.Yes>=.5?1:0,
+    outfit:OUTFIT.indexOf(OUTFIT.reduce((a,b)=>P.outfit.p[b]>P.outfit.p[a]?b:a)),rr:(DATA.railroad.p??.5)>=.5?1:0,ia:null}}
+
+// ---- simulated other entries (parameters in Assumptions)
+function oppSheet(sim,cfg,rng,g){
+  const pick=new Uint8Array(55),marg=new Float32Array(NS);const lean=cfg.lean+.15*g();
+  const contra=new Set();for(let k=0;k<cfg.contra;k++)contra.add(Math.floor(rng()*55));
+  let senSeats=DATA.senate_not_up_d,houSeats=0;
+  for(let j=0;j<55;j++){const r=SHEET[j],cen=CENTER[r.sheet.rating];let d;
+    if(cen===0){const signal=cfg.news*probit(pWin(r))+lean+(1-cfg.news+.3)*g();d=signal>0?1:0}
+    else{d=cen>0?1:0;if(rng()<cfg.dog)d=1-d}
+    if(contra.has(j))d=cen===0?1-d:(cen>0?0:1);
+    pick[j]=d}
+  for(let j=0;j<NS;j++){const r=SHEET[j],pol=DATA.polls.races?.[r.key]?.avg,m=MARG[r.key];
+    const anchor=pol!=null?.5*pol+.5*m.mu:m.mu;let v=.85*anchor+lean*2+2*g();
+    if((v>0)!==(pick[j]===1))v=(pick[j]===1?1:-1)*Math.max(1,Math.abs(v)*.4);
+    marg[j]=Math.round(v*2)/2}
+  for(const r of SEN)if(!r.sheet)senSeats+=r.pc??r.p;
+  for(let j=0;j<NS;j++)if(pick[j]&&(SHEET[j].key!=='S-NE'||cfg.osborn))senSeats++;
+  for(const r of HOU)if(!r.sheet)houSeats+=r.p;
+  for(let j=NS;j<55;j++)houSeats+=pick[j];
+  const senG=Math.round(senSeats+.8*g()),houG=Math.round(houSeats+4*g());
+  const ups=upsetList().slice(0,15),u=ups[Math.floor(rng()*ups.length)];
+  const ia=MARG['GOV-IA'],iaPoll=DATA.polls.races?.['GOV-IA']?.avg,iaAnchor=iaPoll!=null?.5*iaPoll+.5*ia.mu:ia.mu;
+  return{pick,marg,senC:senG>=51?1:0,houC:houG>=218?1:0,senG,houG,upset:u?{key:u.key,party:u.party}:null,
+    rain:rng()<.35?1:0,tie:rng()<.5?1:0,outfit:(()=>{const w=[.35,.4,.2,.05];let x=rng(),k=0;while(k<3&&x>w[k]){x-=w[k];k++}return k})(),
+    rr:rng()<.5+.3*lean?1:0,ia:Math.round((.85*iaAnchor+lean*2+3*g())*2)/2}}
+
+function run(){
+  const cfg=st.cfg,sim=simulate(cfg,st.seed),rng=mulberry32(st.seed^0x5bd1e995),g=gaussOf(rng),S=sim.S;
+  const opp=[];for(let k=0;k<OPP;k++){const sh=oppSheet(sim,cfg,rng,g);opp.push({sh,sc:total(itemScores(sim,sh),S)})}
+  const nOpp=cfg.pool-1,pool=[],oIA=[],oDist=new Float32Array(S);const pr=mulberry32(st.seed^0x1234567);
+  for(let s=0;s<S;s++){const a=new Uint16Array(nOpp),ia=new Float32Array(nOpp);let md=1e9;
+    for(let k=0;k<nOpp;k++){a[k]=Math.floor(pr()*OPP);ia[k]=opp[a[k]].sh.ia;md=Math.min(md,Math.abs(sim.iaM[s]-ia[k]))}
+    pool.push(a);oIA.push(ia);oDist[s]=md}
+  // Iowa prop: 3 points to the closest guess; a tie with another entry splits them.
+  const iaPts=myIA=>{const a=new Float32Array(S);for(let s=0;s<S;s++){const d=Math.abs(sim.iaM[s]-myIA);a[s]=d<oDist[s]-1e-6?3:d<=oDist[s]+1e-6?1.5:0}return a};
+  let iaBest=null,bv=-1;const iam=MARG['GOV-IA'];
+  for(let g10=Math.round((iam.mu-6)*10);g10<=Math.round((iam.mu+6)*10);g10++){const v=mean(iaPts(g10/10));if(v>bv){bv=v;iaBest=g10/10}}
+  // best other-entry total in each simulation given my Iowa guess, and that entry's House-seat tiebreak distance
+  function oppMax(myIA){const best=new Float32Array(S),tb=new Float32Array(S);
+    for(let s=0;s<S;s++){const my=Math.abs(sim.iaM[s]-myIA),md=Math.min(my,oDist[s]);let mx=-1,d=1e9;
+      for(let k=0;k<nOpp;k++){const o=opp[pool[s][k]],od=Math.abs(sim.iaM[s]-oIA[s][k]),ip=od<=md+1e-6?(my<=md+1e-6?1.5:3):0,v=o.sc[s]+ip,hd=Math.abs(o.sh.houG-sim.hou[s]);
+        if(v>mx+1e-6){mx=v;d=hd}else if(Math.abs(v-mx)<=1e-6)d=Math.min(d,hd)}
+      best[s]=mx;tb[s]=d}return{best,tb}}
+  // 1 if first, 0.5 if still tied after the House-seat tiebreaker
+  const firstRate=(tot,om,houG)=>{let f=0;for(let s=0;s<S;s++){const v=tot[s],o=om.best[s];
+    if(v>o+1e-6)f++;else if(Math.abs(v-o)<=1e-6){const d=Math.abs(houG-sim.hou[s]);f+=d<om.tb[s]?1:d===om.tb[s]?.5:0}}return f/S};
+  function evaluate(sh){if(sh.ia==null)sh.ia=iaBest;const parts=itemScores(sim,sh);parts.ia=iaPts(sh.ia);
+    const tot=total(parts,S);return{sh,parts,mean:mean(tot),first:firstRate(tot,oppMax(sh.ia),sh.houG)}}
+  // chance-of-first search: swap one answer at a time while the chance of finishing first improves
+  function optimizeFirst(start){
+    const sh={...start.sh,pick:Uint8Array.from(start.sh.pick),marg:Float32Array.from(start.sh.marg)};
+    const parts={...start.parts},om=oppMax(sh.ia);let tot=total(parts,S);
+    let cur=firstRate(tot,om,sh.houG);
+    const tryAlt=(key,np,apply,houG)=>{const old=parts[key],t=new Float32Array(S);for(let s=0;s<S;s++)t[s]=tot[s]-old[s]+np[s];
+      const f=firstRate(t,om,houG??sh.houG);if(f>cur+1e-9){cur=f;tot=t;parts[key]=np;apply();return true}return false};
+    const ups=upsetList().slice(0,20);
+    for(let pass=0;pass<3;pass++){let changed=false;
+      for(let j=0;j<55;j++){const alt=1-sh.pick[j];changed=tryAlt('p'+j,pickScores(sim,j,alt),()=>{sh.pick[j]=alt})||changed}
+      for(let j=0;j<NS;j++)for(const d of [-3,-2,-1,-.5,.5,1,2,3]){const gq=Math.round((sh.marg[j]+d)*10)/10;changed=tryAlt('m'+j,marginScores(sim,j,gq),()=>{sh.marg[j]=gq})||changed}
+      changed=tryAlt('senC',ctrlScores(sim.sen,51,1-sh.senC),()=>{sh.senC=1-sh.senC})||changed;
+      changed=tryAlt('houC',ctrlScores(sim.hou,218,1-sh.houC),()=>{sh.houC=1-sh.houC})||changed;
+      for(const d of [-3,-2,-1,1,2,3]){const gq=sh.senG+d;changed=tryAlt('senG',seatScores(sim.sen,8,gq),()=>{sh.senG=gq})||changed}
+      for(const d of [-12,-8,-4,-2,-1,1,2,4,8,12]){const gq=sh.houG+d;changed=tryAlt('houG',seatScores(sim.hou,2,gq),()=>{sh.houG=gq},gq)||changed}
+      for(const u of ups){if(sh.upset&&u.key===sh.upset.key)continue;const nu={key:u.key,party:u.party};changed=tryAlt('upset',upsetScores(sim,nu),()=>{sh.upset=nu})||changed}
+      for(const k of ['rain','tie','rr']){const alt=1-sh[k];changed=tryAlt(k,propScores(sim,k,alt),()=>{sh[k]=alt})||changed}
+      for(let o=0;o<4;o++){if(o===sh.outfit)continue;changed=tryAlt('outfit',propScores(sim,'outfit',o),()=>{sh.outfit=o})||changed}
+      if(!changed)break}
+    return evaluate(sh)}
+  const tilts=TILTS.map(t=>({t,...evaluate(sheetFor(sim,t))}));
+  const evBest=tilts.find(x=>x.t===0);
+  const firstBest=optimizeFirst(tilts.reduce((a,b)=>b.first>a.first?b:a));
+  let oppMean=0;for(const o of opp)oppMean+=mean(o.sc);oppMean=oppMean/OPP+3/cfg.pool;
+  return{sim,opp,evBest,firstBest,oppMean,evaluate,iaBest}}
+//MODEL-END
+
+// ---------------- rendering
+let res=null;
+const fmtM=(v,dl)=>v>=0?(dl||'D')+'+'+(+v).toFixed(1):'R+'+(-v).toFixed(1);
+const cur=()=>res?(st.strat==='first'?res.firstBest:res.evBest):null;
+const link=(href,txt)=>'<a href="'+esc(href)+'" target="_blank" rel="noopener">'+txt+'</a>';
+function srcLinks(r){return['kalshi','polymarket','predictit'].map(s=>{const x=r.src[s];
+  if(x.status==='ok'||x.status==='stale')return link(x.page||x.url,SRCL[s]+' '+Math.round(x.p*100)+(x.status==='stale'?'*':''));return null}).filter(Boolean).join(' · ')}
+const chip=(party,pts,txt)=>'<span class="chip '+party+(pts===8?' up':'')+'">'+esc(txt)+' '+pts+'</span>';
+const last=n=>n.split(' ').slice(-1)[0];
+const mLinks=m=>(m.links||[]).filter((l,i,a)=>a.findIndex(x=>x.src===l.src)===i).map(l=>link(l.page||l.url,SRCL[l.src])).join(' ');
+
+function render(){
+  const c=cur();if(!c)return;const sh=c.sh,sim=res.sim;
+  $('stamp').textContent='Odds '+new Date(DATA.fetched_at).toLocaleString([],{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  $('s-ev').setAttribute('aria-pressed',st.strat!=='first');$('s-first').setAttribute('aria-pressed',st.strat==='first');
+  $('tiles').innerHTML='<div class="tile"><b>'+c.mean.toFixed(0)+' pts</b><span>expected score</span></div>'+
+    '<div class="tile"><b>'+pc(c.first)+'</b><span>chance of first, pool of '+st.cfg.pool+'</span></div>'+
+    '<div class="tile"><b>'+res.oppMean.toFixed(0)+' pts</b><span>average other entry</span></div>';
+  $('sen').innerHTML='<tr><th>Race</th><th>Dem win</th><th>Pick</th><th>Margin</th></tr>'+SHEET.slice(0,NS).map((r,j)=>{
+    const s=r.sheet,d=sh.pick[j]===1,pt=PTS[s.rating],pts=d?pt[0]:pt[1],m=MARG[r.key];
+    return '<tr><td class="race"><b>'+s.n+'. '+esc(r.key.slice(2))+'</b><br><span>'+RAT[s.rating]+'</span></td>'+
+      '<td><b>'+pc(pWin(r))+'</b><div class="src">'+srcLinks(r)+'</div></td>'+
+      '<td>'+chip(d?s.dletter:'R',pts,d?last(s.dname):last(s.rname))+'</td>'+
+      '<td><span class="write">'+fmtM(sh.marg[j],s.dletter)+'</span><div class="src">'+mLinks(m)+'</div></td></tr>'}).join('');
+  const groups=[['LnD','Lean Democrat'],['T','Toss-up'],['LnR','Lean Republican']];
+  $('hou').innerHTML='<tr><th>Race</th><th>Dem win</th><th>Pick</th></tr>'+groups.map(([k,name])=>'<tr><td colspan="3" class="grp">'+name+'</td></tr>'+
+    SHEET.slice(NS).map((r,jj)=>{const j=jj+NS;if(r.sheet.rating!==k)return'';const d=sh.pick[j]===1,pt=PTS[k],pts=d?pt[0]:pt[1];
+      return '<tr><td class="race"><b>'+r.sheet.n+'. '+esc(r.sheet.label)+'</b> <span>'+esc(r.sheet.note)+'</span></td><td><b>'+pc(r.p)+'</b><div class="src">'+srcLinks(r)+'</div></td><td>'+chip(d?'D':'R',pts,d?'D':'R')+'</td></tr>'}).join('')).join('');
+  const ctl=c=>(c.links||[]).map(l=>link(l.page||l.url,SRCL[l.src]+' '+Math.round(l.p*100))).join(' · ');
+  $('board').innerHTML='<div><b>'+(sh.senC?'Dem':'Rep')+'</b><span>Senate control · Dem '+pc(DATA.control.senate.p)+'<br><span class="src">'+ctl(DATA.control.senate)+'</span></span></div>'+
+    '<div><b>'+(sh.houC?'Dem':'Rep')+'</b><span>House control · Dem '+pc(DATA.control.house.p)+'<br><span class="src">'+ctl(DATA.control.house)+'</span></span></div>'+
+    '<div><b>'+sh.senG+'</b><span>Dem Senate seats · 80% range '+pct(sim.sen,.1)+'–'+pct(sim.sen,.9)+'</span></div>'+
+    '<div><b>'+sh.houG+'</b><span>Dem House seats · 80% range '+pct(sim.hou,.1)+'–'+pct(sim.hou,.9)+'</span></div>';
+  const P=DATA.props,rr=DATA.railroad,u=sh.upset,ur=u&&ALL.find(r=>r.key===u.key);
+  const rrl=(rr.links||[]).map(l=>link(l.page||l.url,SRCL[l.src]+' '+Math.round(l.p*100))).join(' · ');
+  $('wild').innerHTML='<tr><th>Item</th><th>Answer</th><th class="n">Chance</th></tr>'+
+    '<tr><td class="race"><b>Upset Special</b><br><span>'+(u&&cookNow(u.key)?'Cook: '+RAT[cookNow(u.key)]:'check Cook rating')+'</span></td><td class="write">'+(u?esc(u.key.slice(2))+' ('+u.party+')':'–')+(ur?'<div class="src">'+srcLinks(ur)+'</div>':'')+'</td><td class="n">'+(ur?pc(u.party==='D'?ur.p:1-ur.p):'')+'</td></tr>'+
+    '<tr><td class="race"><b>1. Rain in Chicago</b></td><td class="write">'+(sh.rain?'Yes':'No')+'</td><td class="n">'+pc(sh.rain?P.rain.p:1-P.rain.p)+'</td></tr>'+
+    '<tr><td class="race"><b>2. Talarico tie</b></td><td class="write">'+(sh.tie?'Yes':'No')+'</td><td class="n">'+pc(sh.tie?P.tie.p.Yes:P.tie.p.No)+'</td></tr>'+
+    '<tr><td class="race"><b>3. Collins outfit</b></td><td class="write">'+OUTFIT[sh.outfit]+'</td><td class="n">'+pc(P.outfit.p[OUTFIT[sh.outfit]])+'</td></tr>'+
+    '<tr><td class="race"><b>4. TX Railroad</b></td><td class="write">'+(sh.rr?'Rosenthal (D)':'French (R)')+'<div class="src">'+rrl+'</div></td><td class="n">'+pc(sh.rr?rr.p:1-rr.p)+'</td></tr>'+
+    '<tr><td class="race"><b>5. Iowa Governor</b><br><span>closest in pool</span></td><td class="write">'+fmtM(sh.ia,'D')+'</td><td class="n">'+pc(mean(c.parts.ia)/3)+'</td></tr>';
+  $('assume-list').innerHTML=[['People in the pool',st.cfg.pool],['Simulated elections',st.cfg.sims],['Other entries: partisan lean',st.cfg.lean],
+    ['Other entries: underdog rate',st.cfg.dog],['Other entries: contrarian picks',st.cfg.contra],['Other entries: toss-ups follow odds',st.cfg.news],['Osborn counts as Dem',st.cfg.osborn?'yes':'no']]
+    .map(([a,b])=>'<li>'+a+': '+b+'</li>').join('');
+  renderWork();renderMine();
+}
+
+// ---------------- show work
+function bars(pmf,lo,hi,mark){const vals=[];let mx=0;for(let k=lo;k<=hi;k++){const v=pmf[k]||0;vals.push([k,v]);mx=Math.max(mx,v)}
+  return '<div class="bars" aria-hidden="true">'+vals.map(([k,v])=>'<i class="'+(k===mark?'on':'')+'" style="height:'+(100*v/mx).toFixed(1)+'%"></i>').join('')+'</div><div class="src" style="display:flex;justify-content:space-between"><span>'+lo+'</span><span>'+hi+'</span></div>'}
+function pmfMedian(p){for(const [k,cc] of cdfOf(p)){if(cc>=.5)return k}return null}
+function renderWork(){
+  const c=cur(),sh=c.sh,sim=res.sim,P=DATA.props,cfg=st.cfg;
+  $('w-method').innerHTML=['Race odds: Kalshi and Polymarket weighted 1 each, PredictIt 0.25.',
+    cfg.sims.toLocaleString()+' simulated elections. Each of the 470 races wins at its market odds; races move together through one national swing, sized so chamber control matches the control markets (Senate '+pc(sim.cs.f)+' vs '+pc(DATA.control.senate.p)+', House '+pc(sim.ch.f)+' vs '+pc(DATA.control.house.p)+').',
+    'Senate margins: normal curve centered to match each race\'s win odds; spread fitted to its margin and vote-share markets.',
+    'Seat totals: race sums blended 50/50 with the seat-count markets.',
+    'Highest expected score: every answer chosen for the most expected points.',
+    'Best chance of first: starting from there, answers are swapped one at a time while the chance of finishing first rises.'].map(x=>'<li>'+esc(x)+'</li>').join('');
+  $('w-picks').innerHTML='<tr><th>Race</th><th class="n">Dem win</th><th class="n">EV D</th><th class="n">EV R</th><th>Pick</th></tr>'+SHEET.map((r,j)=>{
+    const p=pWin(r),pt=PTS[r.sheet.rating],eD=p*pt[0],eR=(1-p)*pt[1],d=sh.pick[j]===1;
+    return '<tr><td class="race"><b>'+r.sheet.n+'. '+esc(r.key.slice(2))+'</b> <span>'+RAT[r.sheet.rating]+'</span></td><td class="n">'+pc(p)+'</td><td class="n'+(eD>=eR?' best':'')+'">'+eD.toFixed(2)+'</td><td class="n'+(eR>eD?' best':'')+'">'+eR.toFixed(2)+'</td><td>'+(d?'D':'R')+'</td></tr>'}).join('');
+  $('w-marg').innerHTML='<tr><th>Race</th><th>Market curve</th><th>Vote share</th><th>Polls</th><th>Answer</th><th class="n">EV</th></tr>'+SHEET.slice(0,NS).map((r,j)=>{
+    const m=MARG[r.key],dl=r.sheet.dletter,pol=DATA.polls.races?.[r.key],vs=m.vote_share||{};
+    const vsTxt=m.vote_share_margin!=null?fmtM(m.vote_share_margin,dl)+'<div class="src">'+Object.values(vs).map(v=>link(v.page,esc(last(v.name)))).join(' ')+'</div>':'–';
+    return '<tr><td class="race"><b>'+esc(r.key.slice(2))+'</b></td><td>'+fmtM(m.mu,dl)+' ± '+m.sd.toFixed(1)+'<div class="src">'+mLinks(m)+'</div></td><td>'+vsTxt+'</td><td>'+(pol&&pol.avg!=null?fmtM(pol.avg,dl)+' <span class="src">('+pol.n_polls+')</span>':'–')+'</td><td class="write">'+fmtM(sh.marg[j],dl)+'</td><td class="n">'+marginEV(m.mu,m.sd,sh.marg[j]).toFixed(1)+'</td></tr>'}).join('');
+  const sm=DATA.seat_markets,blk=(item,arr,race,mk,guess,per,lo,hi,label)=>{const srcs=sm[item]||{};
+    return '<p><b>'+label+': '+guess+'</b> · expected '+mean(seatScores(arr,per,guess)).toFixed(1)+' of 40</p>'+bars(arrPmf(arr),lo,hi,guess)+
+      '<p class="src" style="margin:4px 0 14px">Medians: race sums '+pmfMedian(arrPmf(race))+' · seat markets '+(mk?pmfMedian(mk):'–')+' ('+Object.keys(srcs).map(k=>link(srcs[k].page||srcs[k].url,SRCL[k]+' '+pmfMedian(srcs[k].pmf))).join(' · ')+') · blended '+pmfMedian(arrPmf(arr))+'</p>'};
+  $('w-board').innerHTML='<p><b>Control</b> · Senate Dem '+pc(sim.pSen)+' → '+(sh.senC?'Dem':'Rep')+' ('+(25*(sh.senC?sim.pSen:1-sim.pSen)).toFixed(1)+' pts) · House Dem '+pc(sim.pHou)+' → '+(sh.houC?'Dem':'Rep')+' ('+(25*(sh.houC?sim.pHou:1-sim.pHou)).toFixed(1)+' pts)</p><div style="height:12px"></div>'+
+    blk('seats_senate',sim.sen,sim.senRace,sim.mS,sh.senG,8,44,58,'Dem Senate seats')+blk('seats_house',sim.hou,sim.houRace,sim.mH,sh.houG,2,205,265,'Dem House seats');
+  const ups=upsetList().slice(0,10),r0=P.rain;
+  const rainRows=[['Kalshi daily market',r0.kalshi&&r0.kalshi.p,r0.kalshi&&r0.kalshi.url],['Polymarket daily market',r0.polymarket&&r0.polymarket.p,r0.polymarket&&r0.polymarket.url],
+    ['NWS forecast',r0.nws&&r0.nws.p,r0.nws&&r0.nws.url],["O'Hare history, Oct 27–Nov 10, 1991–2025",r0.climatology.p,r0.climatology.url]];
+  const ia=MARG['GOV-IA'],iaPol=DATA.polls.races?.['GOV-IA'],oMed=pct(res.opp.map(o=>o.sh.ia),.5);
+  const upsAll=upsetList(true).slice(0,14);
+  $('w-wild').innerHTML='<p><b>Upset Special</b> · 15 × win chance, only where Cook rates the race Likely/Solid against the pick. Ratings '+(COOK?'pasted '+esc(COOK.as_of)+' from '+link(COOK._urls[0],'Cook'):'not loaded')+'. Off-sheet House races were all Likely/Solid on Sept 25; the ones Cook has since moved to Lean are marked and skipped.</p>'+
+    '<table style="margin:6px 0 14px"><tr><th>Race</th><th>Pick</th><th>Cook now</th><th class="n">Win</th><th class="n">EV</th></tr>'+upsAll.map(x=>'<tr><td>'+esc(x.key.slice(2))+'</td><td>'+x.party+'</td><td>'+(x.now?RAT[x.now]+(x.eligible?'':' <span class="warn">not eligible</span>'):'–')+'</td><td class="n">'+pc(x.p)+'<div class="src">'+srcLinks(x.r)+'</div></td><td class="n">'+(x.eligible?(15*x.p).toFixed(1):'–')+'</td></tr>').join('')+'</table>'+
+    '<p><b>Rain</b> · first available, top to bottom</p><table style="margin:6px 0 14px">'+rainRows.map(([n,p,u])=>'<tr><td>'+(u?link(u,n):n)+'</td><td class="n">'+(p==null?'not yet':pc(p))+'</td></tr>').join('')+'</table>'+
+    '<p><b>Railroad</b> · '+(DATA.railroad.links||[]).map(l=>link(l.page||l.url,SRCL[l.src]+' Rosenthal '+pc(l.p))).join(' · ')+'</p><div style="height:10px"></div>'+
+    '<p><b>Iowa Governor</b> · markets '+fmtM(ia.mu)+' ± '+ia.sd.toFixed(1)+(iaPol&&iaPol.avg!=null?' · polls '+fmtM(iaPol.avg)+' ('+iaPol.n_polls+')':'')+' · typical other guess '+fmtM(oMed)+'. Answer = guess with the most expected points for being closest; ties split the 3 points.</p>';
+  const yt=id=>'https://www.youtube.com/watch?v='+id,th=(id,f)=>(DATA.thumbs||{})[id+'_'+f]||'https://i.ytimg.com/vi/'+id+'/'+f+'.jpg';
+  const ev=e=>'<tr><td><b>'+esc(e.label)+'</b>'+(e.uncertain?' (unsure)':'')+' · '+esc(e.event)+' <span class="src">weight '+P.event_weights[e.kind]+'</span><div class="frames">'+
+    e.videos.slice(0,2).map(id=>['hq1','hq2','hq3'].map(f=>link(yt(id),'<img alt="Frame from video '+esc(id)+'" src="'+th(id,f)+'">')).join('')).join('')+'</div></td></tr>';
+  $('w-evidence').innerHTML='<p><b>Talarico tie · Yes '+pc(P.tie.p.Yes)+'</b></p><table>'+P.tie.events.map(ev).join('')+'</table>'+
+    '<p style="margin-top:14px"><b>Collins outfit · '+OUTFIT.map(k=>k+' '+pc(P.outfit.p[k])).join(' · ')+'</b></p><table>'+P.outfit.events.map(ev).join('')+'</table>'+
+    '<p class="src" style="margin-top:8px">Chance = (weighted count + 1) ÷ (total + number of answers). Tap a frame to open the video.</p>';
+  const op=res.opp,dogRate=mean(op.map(o=>{let n=0,t=0;for(let j=0;j<55;j++){const cen=CENTER[SHEET[j].sheet.rating];if(cen!==0){t++;if((o.sh.pick[j]===1)!==(cen>0))n++}}return n/t}));
+  const fb=res.firstBest.sh,eb=res.evBest.sh,diffs=[];
+  for(let j=0;j<55;j++)if(fb.pick[j]!==eb.pick[j])diffs.push(SHEET[j].sheet.n+'. '+SHEET[j].key.slice(2)+': '+(fb.pick[j]?'D':'R'));
+  for(let j=0;j<NS;j++)if(Math.abs(fb.marg[j]-eb.marg[j])>1e-6)diffs.push(SHEET[j].key.slice(2)+' margin: '+fmtM(fb.marg[j],SHEET[j].sheet.dletter));
+  if(fb.senG!==eb.senG)diffs.push('Dem Senate seats: '+fb.senG);if(fb.houG!==eb.houG)diffs.push('Dem House seats: '+fb.houG);
+  if(fb.upset&&eb.upset&&fb.upset.key!==eb.upset.key)diffs.push('Upset Special: '+fb.upset.key.slice(2));
+  for(const k of ['senC','houC','rain','tie','rr','outfit'])if(fb[k]!==eb[k])diffs.push(k);
+  $('w-first').innerHTML='<ul class="muted"><li>'+OPP+' simulated other entries; each simulated election draws '+(cfg.pool-1)+'.</li>'+
+    '<li>They take the Cook favorite in Lean/Likely races except '+pc(dogRate)+' of the time, pick toss-ups from the odds plus noise, and make '+cfg.contra+' random contrarian pick(s). Margins: between polls and markets ± 2 pts. Seats: from their own picks.</li>'+
+    '<li>Ties on total score go to the closest Dem House seat count, as on the sheet.</li>'+
+    '<li>Highest-EV sheet: '+res.evBest.mean.toFixed(1)+' pts, first '+pc(res.evBest.first,1)+'. Best-first sheet: '+res.firstBest.mean.toFixed(1)+' pts, first '+pc(res.firstBest.first,1)+'.</li></ul>'+
+    '<p style="margin-top:8px"><b>Best-first sheet changes</b>: '+(diffs.length?esc(diffs.join(' · ')):'none')+'</p>';
+}
+
+// ---------------- my sheet (the submitted paper sheet)
+const SUBMITTED={senPick:'D D D R D D D D D D I R'.split(' '),senMarg:[9.4,9.4,4.0,0.2,1.3,2.8,7.0,2.7,2.1,-0.9,-3.2,-6.5],
+  houPick:Array.from({length:43},(_,k)=>k===0?'R':'D'),senC:'D',houC:'D',senG:51,houG:231,upset:'H-TX-23',rain:'No',tie:'No',outfit:'Red',rr:'Rosenthal',ia:8.1};
+function mineState(){return st.mine||JSON.parse(JSON.stringify(SUBMITTED))}
+function mineSheet(m){const pick=new Uint8Array(55),marg=new Float32Array(NS);
+  for(let j=0;j<NS;j++){pick[j]=m.senPick[j]==='R'?0:1;marg[j]=+m.senMarg[j]}
+  for(let j=0;j<43;j++)pick[NS+j]=m.houPick[j]==='D'?1:0;
+  const ur=ALL.find(r=>r.key===m.upset);
+  return{pick,marg,senC:m.senC==='D'?1:0,houC:m.houC==='D'?1:0,senG:+m.senG,houG:+m.houG,
+    upset:ur?{key:ur.key,party:ur.p<.5?'D':'R'}:null,rain:m.rain==='Yes'?1:0,tie:m.tie==='Yes'?1:0,outfit:OUTFIT.indexOf(m.outfit),rr:m.rr==='Rosenthal'?1:0,ia:+m.ia}}
+function renderMine(){
+  if(!res)return;const m=mineState(),mine=res.evaluate(mineSheet(m)),best=res.evBest,bs=best.sh;
+  $('mine-tiles').innerHTML='<div class="tile"><b>'+mine.mean.toFixed(0)+' pts</b><span>expected score</span></div>'+
+    '<div class="tile"><b>'+pc(mine.first,1)+'</b><span>chance of first</span></div>'+
+    '<div class="tile"><b>'+(best.mean-mine.mean).toFixed(1)+'</b><span>pts below highest EV</span></div>';
+  const rows=[];
+  const opt=(name,val,opts)=>globalThis.STATIC?esc(String(val).replace(/^H-/,'')):'<select data-k="'+name+'">'+opts.map(o=>'<option'+(String(o)===String(val)?' selected':'')+'>'+o+'</option>').join('')+'</select>';
+  const num=(name,val)=>globalThis.STATIC?esc(val):'<input data-k="'+name+'" type="number" step="0.1" inputmode="decimal" value="'+val+'">';
+  const line=(label,ctrl,bestTxt,k,alt)=>{const lost=mean(best.parts[k])-mean(mine.parts[k]);rows.push('<tr class="'+(lost>.05||alt?'diff':'')+'"><td class="race"><b>'+label+'</b></td><td>'+ctrl+'</td><td>'+bestTxt+'</td><td class="n">'+lost.toFixed(1)+(alt!=null?'<div class="src">'+alt.toFixed(1)+' if it doesn\'t count</div>':'')+'</td></tr>')};
+  for(let j=0;j<55;j++){const r=SHEET[j],s=r.sheet,yours=j<NS?m.senPick[j]:m.houPick[j-NS];
+    line(s.n+'. '+esc(r.key.slice(2)),j<NS?opt('senPick.'+j,yours,[s.dletter,'R']):opt('houPick.'+(j-NS),yours,['D','R']),bs.pick[j]?(j<NS?s.dletter:'D'):'R','p'+j);
+    if(j<NS)line('<span>'+s.n+'. margin (+ = Dem)</span>',num('senMarg.'+j,m.senMarg[j]),fmtM(bs.marg[j],s.dletter),'m'+j)}
+  const ups=upsetList();
+  line('Senate control',opt('senC',m.senC,['D','R']),bs.senC?'D':'R','senC');
+  line('House control',opt('houC',m.houC,['D','R']),bs.houC?'D':'R','houC');
+  line('Dem Senate seats',num('senG',m.senG),bs.senG,'senG');
+  line('Dem House seats',num('houG',m.houG),bs.houG,'houG');
+  const myUp=upsetList(true).find(x=>x.key===m.upset);
+  line('Upset Special'+(myUp&&!myUp.eligible?'<br><span class="warn">Cook now '+RAT[myUp.now]+': may not qualify</span>':''),opt('upset',m.upset,Array.from(new Set([m.upset,...ups.slice(0,25).map(x=>x.key)]))),bs.upset?bs.upset.key.slice(2):'–','upset',myUp&&!myUp.eligible?mean(best.parts.upset):null);
+  line('Rain',opt('rain',m.rain,['Yes','No']),bs.rain?'Yes':'No','rain');
+  line('Talarico tie',opt('tie',m.tie,['Yes','No']),bs.tie?'Yes':'No','tie');
+  line('Collins outfit',opt('outfit',m.outfit,OUTFIT),OUTFIT[bs.outfit],'outfit');
+  line('TX Railroad',opt('rr',m.rr,['Rosenthal','French']),bs.rr?'Rosenthal':'French','rr');
+  line('Iowa Governor',num('ia',m.ia),fmtM(bs.ia,'D'),'ia');
+  $('mine').innerHTML='<tr><th>Item</th><th>Yours</th><th>Highest EV</th><th class="n">EV lost</th></tr>'+rows.join('');
+}
+document.addEventListener('change',e=>{const k=e.target.dataset&&e.target.dataset.k;if(!k)return;const m=mineState();
+  const [a,i]=k.split('.');const v=e.target.type==='number'?parseFloat(e.target.value):e.target.value;
+  if(i!=null)m[a][+i]=v;else m[a]=v;st.mine=m;save();renderMine()});
+$('mine-reset').addEventListener('click',()=>{st.mine=null;save();renderMine()});
+
+// ---------------- sources grid: item x market type x source
+let gMode='sheet';
+const STLAB={ok:'✓',stale:'stale',no_market:'none',no_price:'no price',person_only:'no party',error:'error',partial:'partial',not_listed_yet:'not yet',not_used:'not used'};
+function renderGrid(){
+  const by={};for(const r of DATA.grid){const k=r.item+'|'+r.type;(by[k]=by[k]||{item:r.item,type:r.type,cells:{}}).cells[r.source]=r}
+  const sheetKeys=new Set(SHEET.map(r=>r.key));
+  let rows=Object.values(by);
+  const isSheet=x=>!/^[HS]-/.test(x.item)||sheetKeys.has(x.item);
+  if(gMode==='sheet')rows=rows.filter(isSheet);
+  // gap = Kalshi or Polymarket missing; PredictIt lists few races, so it is shown but not counted as a gap
+  if(gMode==='gaps')rows=rows.filter(x=>['kalshi','polymarket'].some(s=>!x.cells[s]||!['ok','stale'].includes(x.cells[s].status)));
+  const cell=x=>{if(!x)return'<td class="muted">–</td>';const t=STLAB[x.status]||x.status;
+    return '<td'+(x.note?' title="'+esc(x.note)+'"':'')+'>'+(x.url&&(x.status==='ok'||x.status==='stale')?link(x.url,t):'<span class="'+(x.status==='ok'?'':'muted')+'">'+t+'</span>')+(x.note&&['not_used','not_listed_yet','partial'].includes(x.status)?'<div class="src">'+esc(x.note)+'</div>':'')+'</td>'};
+  $('grid').innerHTML='<tr><th>Item</th><th>Market</th><th>Kalshi</th><th>Polymarket</th><th>PredictIt</th></tr>'+rows.map(x=>
+    '<tr><td class="race"><b>'+esc(x.item.replace(/^([HS])-/,''))+'</b></td><td class="small">'+esc(x.type)+'</td>'+cell(x.cells.kalshi)+cell(x.cells.polymarket)+cell(x.cells.predictit)+'</tr>').join('');
+  $('grid-sum').textContent=Object.keys(by).length+' rows';
+  ['sheet','gaps','all'].forEach(k=>$('g-'+k).setAttribute('aria-pressed',gMode===k))}
+['sheet','gaps','all'].forEach(k=>$('g-'+k).addEventListener('click',()=>{gMode=k;renderGrid()}));
+
+// ---------------- wiring
+function tab(k){['opt','work','mine','src'].forEach(x=>{$('tab-'+x).setAttribute('aria-selected',x===k);$('pane-'+x).hidden=x!==k})}
+['opt','work','mine','src'].forEach(k=>$('tab-'+k).addEventListener('click',()=>tab(k)));
+const CF=[['pool','c-pool'],['sims','c-sims'],['lean','c-lean'],['dog','c-dog'],['contra','c-contra'],['news','c-news']];
+function fillCfg(){CF.forEach(([k,id])=>$(id).value=st.cfg[k]);$('c-osborn').checked=!!st.cfg.osborn}
+CF.forEach(([k,id])=>$(id).addEventListener('change',e=>{const el=e.target,v=parseFloat(el.value);if(isFinite(v))st.cfg[k]=Math.min(+el.max,Math.max(+el.min,v));el.value=st.cfg[k];save();go()}));
+$('c-osborn').addEventListener('change',e=>{st.cfg.osborn=e.target.checked;save();go()});
+$('reset').addEventListener('click',()=>{st.cfg={...DEFAULTS};save();fillCfg();go()});
+$('s-ev').addEventListener('click',()=>{st.strat='ev';save();render()});
+$('s-first').addEventListener('click',()=>{st.strat='first';save();render()});
+function go(){$('tiles').innerHTML='<div class="tile"><b>…</b><span>simulating</span></div>';setTimeout(()=>{res=run();render()},20)}
+fillCfg();renderGrid();go();
+</script>
+</body>
+</html>

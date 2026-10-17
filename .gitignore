@@ -1,0 +1,5 @@
+__pycache__/
+data/cache.json
+data/snapshots/
+data/props/frames/
+data/http_cache.json

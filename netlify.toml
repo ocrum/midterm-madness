@@ -1,0 +1,5 @@
+# Netlify runs the refresh on every build; trigger builds daily with a build hook
+# (see README). No Python packages are needed.
+[build]
+  command = "./refresh.sh"
+  publish = "site"
